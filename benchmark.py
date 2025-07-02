@@ -1,10 +1,9 @@
-# benchmark.py
-
 import torch
 import pandas as pd
 from typing import List
 from tqdm import tqdm
 from operators.base_op import OperatorWrapper, BenchmarkConfig
+from utils import quantize_to_int8
 
 class BenchmarkRunner:
     def __init__(self, 
@@ -24,13 +23,19 @@ class BenchmarkRunner:
 
     def _time_operator(self, op: OperatorWrapper, config: BenchmarkConfig) -> dict:
         """对单个算子和单个配置进行计时和性能计算"""
+        try:
+            op_dtype = op.dtype
+        except AttributeError:
+            op_dtype = torch.float32
         
-        # 准备输入数据 (使用FP32模拟通用输入)
-        a = torch.randn(config.batch_size, config.m, config.k, device=self.device)
-        # 对于B矩阵，我们在prepare阶段已经处理，这里只做样子，实际执行时用的是打包好的
-        b = torch.randn(config.batch_size, config.k, config.n, device=self.device)
+        M = config.m
+        N = config.n
+        K = config.k
+        B = config.batch_size
 
-        # 算子特定的准备工作
+        a = torch.randn(B, M, K, device=self.device).to(op_dtype)
+        b = torch.randn(B, K, N, device=self.device).to(op_dtype)
+
         op.prepare(config, self.device)
 
         # 预热
@@ -60,7 +65,7 @@ class BenchmarkRunner:
 
         return {
             "latency_ms": round(avg_latency_ms, 4),
-            "tops": round(tops, 2)
+            "tflops/tops": round(tops, 2)
         }
 
     def run(self) -> pd.DataFrame:
@@ -79,6 +84,7 @@ class BenchmarkRunner:
                     # 记录结果
                     result_row = {
                         "operator": op.name(),
+                        "model": config.model_name,
                         "M": config.m,
                         "N": config.n,
                         "K": config.k,

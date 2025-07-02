@@ -1,5 +1,3 @@
-# run_benchmark.py
-
 import argparse
 import pandas as pd
 from benchmark import BenchmarkRunner, BenchmarkConfig
@@ -14,32 +12,33 @@ def main():
                         help="Path to save the benchmark results CSV file.")
     args = parser.parse_args()
 
-    # --- 1. 定义你的测试配置 ---
-    # 你可以定义任意数量的场景
-    benchmark_configs = [
-        # LLM FFN-like (大M, 小N)
-        BenchmarkConfig(m=4096, n=1024, k=4096, batch_size=1),
-        BenchmarkConfig(m=4096, n=1024, k=4096, batch_size=8),
-        BenchmarkConfig(m=4096, n=1024, k=4096, batch_size=32),
-        
-        # Square-like
-        BenchmarkConfig(m=2048, n=2048, k=2048, batch_size=1),
-        BenchmarkConfig(m=2048, n=2048, k=2048, batch_size=16),
-        
-        # Low-rank-like
-        BenchmarkConfig(m=4096, n=4096, k=128, batch_size=1),
-        BenchmarkConfig(m=4096, n=4096, k=128, batch_size=32),
+    MODEL_SIZES = {
+        "Llama-7B":  {"k": 4096, "n": 11008},
+        "Llama-13B": {"k": 5120, "n": 13824},
+        "Llama-70B": {"k": 8192, "n": 28672},
+    }
 
-        # BenchmarkConfig(m=128, n=128, k=128, batch_size=1)
-    ]
+    # 2. 定义我们想测试的LLM推理批次大小
+    LLM_BATCH_SIZES = [1, 2, 4, 8, 16, 32]
+
+    # 3. 动态生成所有测试配置
+    benchmark_configs = []
+    for model_name, dims in MODEL_SIZES.items():
+        for batch in LLM_BATCH_SIZES:
+            benchmark_configs.append(
+                BenchmarkConfig(
+                    m=batch,
+                    k=dims["k"],
+                    n=dims["n"],
+                    model_name=model_name
+                )
+            )
 
     # --- 2. 实例化所有需要测试的算子 ---
     # 以后你只需要在这里添加新的算子实例即可
     operators_to_test = [
         PyTorchFP16GEMM(),
-        PyTorchFP32GEMM()
-        # MyCutlassOp(),  # 像这样添加你的新算子
-        # MyTritonOp(),
+        PyTorchFP32GEMM(),
     ]
 
     # --- 3. 运行测试框架 ---

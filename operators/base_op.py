@@ -1,5 +1,3 @@
-# operators/base_op.py
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import torch
@@ -10,14 +8,14 @@ class BenchmarkConfig:
     m: int
     n: int
     k: int
-    batch_size: int
+    batch_size = 1
+    model_name: str = "Unknown"
 
 class OperatorWrapper(ABC):
     """
     所有待测算子的包装器基类 (Interface)
     任何新的算子实现都需要继承此类，并实现其抽象方法。
     """
-
     @abstractmethod
     def name(self) -> str:
         """返回算子的名称，用于报告。"""
