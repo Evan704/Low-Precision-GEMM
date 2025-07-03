@@ -1,5 +1,6 @@
 {
-  "files.associations": {
+    "cmake.ignoreCMakeListsMissing": true,
+    "files.associations": {
     "vector": "cpp",
     "iostream": "cpp",
     "__nullptr": "cpp",
@@ -69,5 +70,5 @@
     "thread": "cpp",
     "xtree": "cpp",
     "map": "cpp"
-  }
+  },
 }
